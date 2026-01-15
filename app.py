@@ -226,3 +226,34 @@ def assignments_by_hash(hash: str, authorization: Optional[str] = Header(default
             "sheet_id_inmo": rec.sheet_id_inmo,
             "url": rec.url,
         }
+@app.get("/hashes/list")
+def hashes_list(
+    limit: int = 50,
+    telefono: Optional[str] = None,
+    authorization: Optional[str] = Header(default=None),
+):
+    require_auth(authorization)
+
+    with SessionLocal() as db:
+        q = db.query(HashRecord)
+
+        if telefono:
+            q = q.filter(HashRecord.telefono == telefono)
+
+        rows = (
+            q.order_by(HashRecord.created_at.desc())
+            .limit(min(limit, 200))
+            .all()
+        )
+
+        return [
+            {
+                "hash": r.hash,
+                "created_at": r.created_at,
+                "telefono": r.telefono,
+                "portal": r.portal,
+                "url": r.url,
+            }
+            for r in rows
+        ]
+
